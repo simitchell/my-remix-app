@@ -1,4 +1,4 @@
-import type { 
+import type {
   LinksFunction,
   LoaderFunctionArgs,
 } from "@remix-run/node";
@@ -16,6 +16,7 @@ import {
   ScrollRestoration,
   useLoaderData,
   useNavigation,
+  useSubmit,
 } from "@remix-run/react";
 
 import appStylesHref from "./app.css";
@@ -45,6 +46,12 @@ export const loader = async ({
 export default function App() {
   const { contacts, q } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
+  const submit = useSubmit();
+  const searching =
+    navigation.location &&
+    new URLSearchParams(navigation.location.search).has(
+      "q"
+    );
 
   useEffect(() => {
     const searchField = document.getElementById("q");
@@ -52,7 +59,7 @@ export default function App() {
       searchField.value = q || "";
     }
   }, [q]);
-  
+
   return (
     <html lang="en">
       <head>
@@ -65,16 +72,28 @@ export default function App() {
         <div id="sidebar">
           <h1>Remix Contacts</h1>
           <div>
-            <Form id="search-form" role="search">
+            <Form
+              id="search-form"
+              onChange={(event) => {
+                const isFirstSearch = q === null;
+                submit(event.currentTarget, {
+                  replace: !isFirstSearch,
+                });
+              }}
+              role="search">
               <input
                 id="q"
+                className={searching ? "loading" : ""}
                 aria-label="Search contacts"
                 defaultValue={q || ""}
                 placeholder="Search"
                 type="search"
                 name="q"
               />
-              <div id="search-spinner" aria-hidden hidden={true} />
+              <div id="search-spinner"
+                aria-hidden
+                hidden={!searching}
+              />
             </Form>
             <Form method="post">
               <button type="submit">New</button>
@@ -118,7 +137,9 @@ export default function App() {
         </div>
         <div
           className={
-            navigation.state === "loading" ? "loading" : ""
+            navigation.state === "loading" && !searching
+              ? "loading"
+              : ""
           }
           id="detail"
         >
